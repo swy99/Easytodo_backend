@@ -1,2 +1,2 @@
-# EZTODO_API_SERVER
+# Easytodo_backend
 <img src="images/context_diagram.png">
