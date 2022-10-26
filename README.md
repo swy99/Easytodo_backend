@@ -1,2 +1,2 @@
 # Easytodo_backend
-<img src="images/context_diagram.png">
+<img src="images/backend context diagram.png">
