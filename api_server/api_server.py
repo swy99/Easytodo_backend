@@ -28,13 +28,10 @@ oauth_client_google = WebApplicationClient(GOOGLE_CLIENT_ID)
 session_manager = SessionManager()
 db_manager = DBManager()
 
-def rh():
-    print(type(request))
-
-def make_login_response_json(session: Session, userinfo_dict: dict) -> str:  # make a json object with token and userinfo
+def response_login_success_json(session: Session, userinfo_dict: dict) -> str:  # make a json object with token and userinfo
     token_dict = {'sid': session.sid, 'expired_at': datetime2JSON(session.timeout)}
     res_dict = {'token': token_dict, 'userinfo': userinfo_dict}
-    del res_dict['userinfo']['sub']
+    del res_dict['userinfo']['sub'], res_dict['userinfo']['uid']
     return json.dumps(res_dict)
 
 def main():
@@ -42,7 +39,6 @@ def main():
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
     ssl_context.load_cert_chain(certfile='ssl/cert.pem', keyfile='ssl/key.pem', password='secret')# OAuth2 client setup
     app.run(host="0.0.0.0", port=443, ssl_context=ssl_context)
-    db_manager.close()
 
 @app.route('/')  # test api
 def hello_world():
@@ -59,7 +55,6 @@ def post_echo_call():
 
 @app.route('/login', methods=['POST'])
 def login():
-    rh()
     # Find out what URL to hit for Google login
     authorization_endpoint = get_google_provider_cfg()["authorization_endpoint"]
 
@@ -73,7 +68,7 @@ def login():
     return request_uri
 
 @app.route("/login/callback")
-def callback():
+def login_callback():
     # Get authorization code Google sent back to you
     code = request.args.get("code")
 
@@ -111,12 +106,22 @@ def callback():
     if db_manager.is_member(uid) or db_manager.sign_up(userinfo_dict):
         userinfo_dict = db_manager.get_userinfo(uid)
         session = session_manager.login(userinfo_dict['uid'])
-        resp_str = make_login_response_json(session, userinfo_dict)
+        resp_str = response_login_success_json(session, userinfo_dict)
         resp = make_response(resp_str)
     else:
         resp = "error"
 
     return resp
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    sid = request.cookies.get('sid')
+    if session_manager.logout(sid):
+        return make_response("LOGOUT successful")
+    return response_unauthorized("session not found")
+
+def response_unauthorized(msg: str = ""):
+    return msg, 401
 
 def get_google_provider_cfg():
     return requests.get(GOOGLE_DISCOVERY_URL).json()

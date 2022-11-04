@@ -5,10 +5,6 @@ from jsondatetime import *
 
 class DBManager:
     def __init__(self):
-        self.cnx = mysql.connector.connect(user='root', password='1234',
-                                           host='localhost',
-                                           database='userdata')
-        self.cursor = self.cnx.cursor()
         self._query_insert_userinfo = ("INSERT INTO userinfo "
                                       "(uid, name, given_name, email, signup_datetime) "
                                       "VALUES (%s, %s, %s, %s, %s)")
@@ -19,79 +15,107 @@ class DBManager:
         self._query_insert_todoitem = ("")
         self._query_select_todoitems_by_uid = ("")
 
-    def _insert_userinfo(self, userinfo_dict: dict) -> bool: # use only when
+    def _connect(self):
+        try:
+            self.cnx = mysql.connector.connect(user='root', password='1234',
+                                               host='localhost',
+                                               database='userdata')
+            self.cursor = self.cnx.cursor()
+        except Exception as e:
+            print(f'{fg("red")}[DB] failed: _connect {e} {fg("white")}')
+
+    def _close(self):
+        try:
+            self.cnx.close()
+        except Exception as e:
+            print(f'{fg("red")}[DB] failed: _close {e} {fg("white")}')
+
+    def _insert_userinfo(self, userinfo_dict: dict) -> bool:
+        res = False
         ud = userinfo_dict
         userinfo_values = (ud['uid'], ud['name'], ud['given_name'], ud['email'], JSONdate2datetime(ud['signup_datetime']))
         try:
+            self._connect()
             self.cursor.execute(self._query_insert_userinfo, userinfo_values)
             self.cnx.commit()
+            self._close()
             print(f'{fg("white")}[DB] insert_userinfo {fg("white")}')
-            return True
+            res = True
         except Exception as e:
             print(f'{fg("red")}[DB] failed: insert_userinfo{e} {fg("white")}')
-            return False
+
+        return res
 
     def _select_userinfo_by_uid(self, uid: str) -> dict or None:
+        res = None
         try:
+            self._connect()
             self.cursor.execute(self._query_select_userinfo_by_uid, (uid,))
             print(f'{fg("white")}[DB] select_userinfo_by_uid {fg("white")}')
             for tup in self.cursor: # uid is unique, so there is only one row or no rows.
-                print(tup[4])
-                return {'sub':tup[0], 'uid':tup[0], 'name':tup[1], 'given_name':tup[2], 'email':tup[3], 'signup_datetime':datetime2JSON(tup[4])}
-            return None
+                res = {'sub':tup[0], 'uid':tup[0], 'name':tup[1], 'given_name':tup[2], 'email':tup[3], 'signup_datetime':datetime2JSON(tup[4])}
+                break
         except Exception as e:
             print(f'{fg("red")}[DB] failed: select_userinfo_by_uid{e}{fg("white")}')
-            return None
+        self._close()
+
+        return res
 
     def _delete_userinfo_by_uid(self, uid: str) -> bool:
+        res = False
         try:
+            self._connect()
             self.cursor.execute(self._query_delete_userinfo_by_uid, (uid,))
             self.cnx.commit()
+            self._close()
             print(f'{fg("white")}[DB] delete_userinfo_by_uid {fg("white")}')
-            return True
+            res = True
         except Exception as e:
             print(f'{fg("red")}[DB] failed: delete_userinfo_by_uid{e} {fg("white")}')
-            return False
+
+        return res
 
     def is_member(self, uid: str) -> bool:
         return self._select_userinfo_by_uid(uid) is not None
 
     def sign_up(self, userinfo_dict: dict) -> bool:
+        res = False
         if not self.is_member(userinfo_dict['uid']):
-            userinfo_dict['signup_datetime'] = datetime2JSON(datetime.utcnow())
+            userinfo_dict['signup_datetime'] = datetime2JSON(datetimenow())
             if self._insert_userinfo(userinfo_dict):
                 print(f'{fg("green")}[DB] sign_up: {userinfo_dict} {fg("white")}')
-                return True
+                res = True
             else:
                 print(f'{fg("red")}[DB] failed: sign_up: db error {fg("white")}')
-                return False
         else:
             print(f'{fg("red")}[DB] failed: sign_up: already a member {userinfo_dict} {fg("white")}')
-            return False
+
+        return res
 
     def delete_account(self, uid: str) -> bool:
+        res = False
         if self.is_member(uid):
             if self._delete_userinfo_by_uid(uid):  # all todoitems are automatically deleted due to CASCADE
                 print(f'{fg("green")}[DB] delete_account: {uid} {fg("white")}')
-                return True
+                res = True
             else:
                 print(f'{fg("red")}[DB] failed: delete_account: db error {fg("white")}')
-                return False
         else:
             print(f'{fg("red")}[DB] failed: delete_account: not a member {uid} {fg("white")}')
-            return False
+
+        return res
 
     def get_userinfo(self, uid: str) -> dict or None:
+        res = None
         userinfo_dict = self._select_userinfo_by_uid(uid)
         if userinfo_dict is not None:
             print(f'{fg("green")}[DB] get_userinfo: {userinfo_dict} {fg("white")}')
-            return userinfo_dict
+            res = userinfo_dict
         else:
             print(f'{fg("red")}[DB] failed: get_userinfo: not a member {uid} unless select failed {fg("white")}')
-            return None
 
-    def close(self):
-        self.cnx.close()
+        return res
+
 
 def test():
     sampleuserinfo = {'uid': '13124', 'name': 'Sungwon', 'given_name': 'Yang', 'email': 'yyang3314@kaist.ac.kr'}

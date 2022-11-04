@@ -13,7 +13,7 @@ class Session:
         self.sid = sid
         self.uid = uid
         self.lifetime = lifetime
-        self.timeout = datetime.now(timezone.utc) + self.lifetime
+        self.timeout = datetimenow() + self.lifetime
 
     def __repr__(self):
         return f'Session(uid:{self.uid})'
@@ -25,15 +25,15 @@ class Session:
         return self.timeout == other.timeout
 
     def resetTimeout(self) -> None:
-        self.timeout = datetime.now(timezone.utc) + self.lifetime
+        self.timeout = datetimenow() + self.lifetime
 
     def isTimeout(self) -> bool:
-        return datetime.now(timezone.utc) > self.timeout
+        return datetimenow() > self.timeout
 
 
 
 class SessionManager:
-    def __init__(self, lifetime: timedelta = timedelta(seconds=5), sid_length: int = 40):
+    def __init__(self, lifetime: timedelta = timedelta(seconds=30), sid_length: int = 40):
         self.sessions = []
         self.lifetime = lifetime
         self.sid_length = sid_length
@@ -93,8 +93,15 @@ class SessionManager:
         # check the db if a new user
         return session
 
-    def logout(self, uid: str) -> bool:
-        pass
+    def logout(self, sid: str) -> bool:
+        self._clearExpiredSessions()
+        for session in self.sessions:
+            if session.sid == sid:
+                print(f'[LOGOUT] {session}')
+                self.sessions.remove(session)
+                return True
+        return False
+
 
 def test():
     m = SessionManager()
