@@ -33,7 +33,7 @@ class Session:
 
 
 class SessionManager:
-    def __init__(self, lifetime: timedelta = timedelta(seconds=30), sid_length: int = 40):
+    def __init__(self, lifetime: timedelta = timedelta(hours=1), sid_length: int = 40):
         self.sessions = []
         self.lifetime = lifetime
         self.sid_length = sid_length
@@ -62,6 +62,22 @@ class SessionManager:
                 return session
         return None
 
+    def remove_session_by_sid(self, sid: str) -> bool:
+        for session in self.sessions:
+            if session.sid == sid:
+                print(f'[LOGOUT] {session}')
+                self.sessions.remove(session)
+                return True
+        return False
+
+    def remove_session_by_uid(self, uid: str) -> bool:
+        for session in self.sessions:
+            if session.uid == uid:
+                print(f'[LOGOUT] {session}')
+                self.sessions.remove(session)
+                return True
+        return False
+
     def _createSession(self, uid: str) -> Session:
         newsid = randstr(self.sid_length)
         while self._search_session_by_sid(newsid) is not None:
@@ -72,12 +88,14 @@ class SessionManager:
         return new_session
 
     def verify_sid(self, sid: str) -> bool:
+        self._clearExpiredSessions()
         for session in self.sessions:
             if session.sid == sid:
                 return True
         return False
 
     def sid_to_uid(self, sid: str) -> str or None:
+        self._clearExpiredSessions()
         for session in self.sessions:
             if session.sid == sid:
                 return session.uid
@@ -95,12 +113,7 @@ class SessionManager:
 
     def logout(self, sid: str) -> bool:
         self._clearExpiredSessions()
-        for session in self.sessions:
-            if session.sid == sid:
-                print(f'[LOGOUT] {session}')
-                self.sessions.remove(session)
-                return True
-        return False
+        return self.remove_session_by_sid(sid)
 
 
 def test():

@@ -12,8 +12,11 @@ class DBManager:
                                              "WHERE uid = %s")
         self._query_delete_userinfo_by_uid = ("DELETE FROM userinfo "
                                               "WHERE uid = %s")
-        self._query_insert_todoitem = ("")
-        self._query_select_todoitems_by_uid = ("")
+        self._query_insert_todoitem = ("INSERT INTO todoitem"
+                                       "(uid, title, tags, deadline, is_repeated, repetition_id, memo, status)"
+                                       "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)")
+        self._query_select_todoitem_by_uid = ("SELECT * FROM todoitem "
+                                               "WHERE uid = %s")
 
     def _connect(self):
         try:
@@ -75,6 +78,50 @@ class DBManager:
 
         return res
 
+    def _insert_todoitem(self, todoitem: dict) -> bool:
+        def safe_get(dict: dict, key: str):
+            if key in dict:
+                res = dict[key]
+                if type(res) is not str:
+                    return int(res)
+                else:
+                    return res
+            else:
+                return None
+
+        res = False
+        try:
+            self._connect()
+            self.cursor.execute(self._query_insert_todoitem, (
+                safe_get(todoitem, 'uid'), safe_get(todoitem, 'title'), safe_get(todoitem, 'tags'),
+                safe_get(todoitem, 'deadline'), safe_get(todoitem, 'is_repeated'), safe_get(todoitem, 'repetition_id'),
+                safe_get(todoitem, 'memo'), safe_get(todoitem, 'status')
+                ))
+            self.cnx.commit()
+            self._close()
+            print(f'{fg("white")}[DB] insert_todoitem {fg("white")}')
+            res = True
+        except Exception as e:
+            print(f'{fg("red")}[DB] failed: insert_todoitem{e} {fg("white")}')
+
+        return res
+
+    def _select_todoitem_by_uid(self, uid: str) -> list or None:
+        res = None
+        try:
+            self._connect()
+            self.cursor.execute(self._query_select_todoitem_by_uid, (uid,))
+            print(f'{fg("white")}[DB] select_todoitem_by_uid {fg("white")}')
+            res = []
+            for tup in self.cursor: # uid is unique, so there is only one row or no rows.
+                res.append({'id':tup[0], 'title':tup[2], 'tags':tup[3], 'deadline':tup[4],
+                            'is_repeated':bool(tup[5]), 'repetition_id':tup[6], 'memo':tup[7], 'status':tup[8]})
+        except Exception as e:
+            print(f'{fg("red")}[DB] failed: select_userinfo_by_uid{e}{fg("white")}')
+        self._close()
+
+        return res
+
     def is_member(self, uid: str) -> bool:
         return self._select_userinfo_by_uid(uid) is not None
 
@@ -116,6 +163,23 @@ class DBManager:
 
         return res
 
+    def insert_one_todoitem(self, uid: str, todoitem: dict) -> bool:
+        todoitem['uid'] = uid
+        return self._insert_todoitem(todoitem)
+
+    def insert_listof_todoitems(self, uid: str, todoitems: list) -> bool:
+        for todoitem in todoitems:
+            todoitem['uid'] = uid
+            if self._insert_todoitem(todoitem) is False:
+                return False
+        return True
+
+    def get_todoitems(self, uid: str) -> list:
+        res = self._select_todoitem_by_uid(uid)
+        if res is not None:
+            return res
+        else:
+            return []
 
 def test():
     sampleuserinfo = {'uid': '13124', 'name': 'Sungwon', 'given_name': 'Yang', 'email': 'yyang3314@kaist.ac.kr'}
@@ -125,7 +189,15 @@ def test():
     db.get_userinfo(uid)
     db.delete_account(uid)
     db.get_userinfo(uid)
-    db.close()
+
+def test_todoitem_insert():
+    sampleuserinfo = {'uid': '777', 'name': 'Sungwon', 'given_name': 'Yang', 'email': 'yyang3314@kaist.ac.kr'}
+    sampletododata = {'uid': '777', 'title': 'testitem!!', 'memo': 'this is insert todoitem test on python'}
+    db = DBManager()
+    db.sign_up(sampleuserinfo)
+    db._insert_todoitem(sampletododata)
+    res = db._select_todoitem_by_uid('777')
+    print(res)
 
 if __name__ == '__main__':
-    test()
+    test_todoitem_insert()

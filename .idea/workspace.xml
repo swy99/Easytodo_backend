@@ -4,9 +4,11 @@
     <list default="true" id="ede3a37c-fa14-45a6-a9e5-8c33ed31c753" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api_server/api_server.py" beforeDir="false" afterPath="$PROJECT_DIR$/api_server/api_server.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api_server/api_server_initialization.py" beforeDir="false" afterPath="$PROJECT_DIR$/api_server/api_server_initialization.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api_server/custom_session.py" beforeDir="false" afterPath="$PROJECT_DIR$/api_server/custom_session.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api_server/db.py" beforeDir="false" afterPath="$PROJECT_DIR$/api_server/db.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api_server/jsondatetime.py" beforeDir="false" afterPath="$PROJECT_DIR$/api_server/jsondatetime.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/create_tables.sql" beforeDir="false" afterPath="$PROJECT_DIR$/db/create_tables.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/backend interface specification.docx" beforeDir="false" afterPath="$PROJECT_DIR$/documents/backend interface specification.docx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -80,13 +82,36 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="db" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Easytodo_backend" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="C:\Users\yyang\AppData\Local\Programs\Python\Python37\python.exe" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/api_server" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/api_server/db.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <list>
       <item itemvalue="Python.Unnamed" />
       <item itemvalue="Python.api_server" />
+      <item itemvalue="Python.db" />
     </list>
     <recent_temporary>
       <list>
         <item itemvalue="Python.api_server" />
+        <item itemvalue="Python.db" />
       </list>
     </recent_temporary>
   </component>

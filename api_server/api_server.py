@@ -14,6 +14,7 @@ import requests
 from api_server_initialization import *
 from custom_session import *
 from db import DBManager
+import pickle
 
 # Third party libraries
 # Internal imports
@@ -25,20 +26,40 @@ app = Flask('name')
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
 oauth_client_google = WebApplicationClient(GOOGLE_CLIENT_ID)
 
-session_manager = SessionManager()
+save_sessions = True
+
+if os.path.isfile("session_manager.backup"):
+    with open('session_manager.backup', 'rb') as file:
+        session_manager = pickle.load(file)
+else:
+    session_manager = SessionManager()
 db_manager = DBManager()
 
-def response_login_success_json(session: Session, userinfo_dict: dict) -> str:  # make a json object with token and userinfo
-    token_dict = {'sid': session.sid, 'expired_at': datetime2JSON(session.timeout)}
-    res_dict = {'token': token_dict, 'userinfo': userinfo_dict}
-    del res_dict['userinfo']['sub'], res_dict['userinfo']['uid']
-    return json.dumps(res_dict)
+def save_sessionmanager():
+    if save_sessions:
+        with open('session_manager.backup', 'wb') as file:
+            pickle.dump(session_manager, file)
 
 def main():
     #ssl settings
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
     ssl_context.load_cert_chain(certfile='ssl/cert.pem', keyfile='ssl/key.pem', password='secret')# OAuth2 client setup
     app.run(host="0.0.0.0", port=443, ssl_context=ssl_context)
+
+def response_login_success_json(session: Session, userinfo_dict: dict) -> str:  # make a json object with token and userinfo
+    token_dict = {'sid': session.sid, 'expired_at': datetime2JSON(session.timeout)}
+    res_dict = {'token': token_dict, 'userinfo': userinfo_dict}
+    del res_dict['userinfo']['sub'], res_dict['userinfo']['uid']
+    save_sessionmanager()
+    return json.dumps(res_dict, ensure_ascii=False)
+
+def response_unauthorized(msg: str = ""):
+    return msg, 401
+
+def get_google_provider_cfg():
+    return requests.get(GOOGLE_DISCOVERY_URL).json()
+
+# END OF auxiliary functions
 
 @app.route('/')  # test api
 def hello_world():
@@ -53,7 +74,7 @@ def post_echo_call():
     param = request.get_json()
     return jsonify(param)
 
-@app.route('/login', methods=['POST'])
+@app.route('/login', methods=['POST', 'GET'])
 def login():
     # Find out what URL to hit for Google login
     authorization_endpoint = get_google_provider_cfg()["authorization_endpoint"]
@@ -65,6 +86,7 @@ def login():
         redirect_uri=request.base_url + "/callback",
         scope=["openid", "email", "profile"],
     )
+    save_sessionmanager()
     return request_uri
 
 @app.route("/login/callback")
@@ -91,7 +113,7 @@ def login_callback():
     )
 
     # Parse the tokens!
-    oauth_client_google.parse_request_body_response(json.dumps(token_response.json()))
+    oauth_client_google.parse_request_body_response(json.dumps(token_response.json(), ensure_ascii=False))
 
     # Now that we have tokens (yay) let's find and hit URL
     # from Google that gives you user's profile information,
@@ -108,9 +130,11 @@ def login_callback():
         session = session_manager.login(userinfo_dict['uid'])
         resp_str = response_login_success_json(session, userinfo_dict)
         resp = make_response(resp_str)
+        resp.set_cookie("sid", session.sid)
     else:
         resp = "error"
 
+    save_sessionmanager()
     return resp
 
 @app.route('/logout', methods=['POST'])
@@ -120,12 +144,46 @@ def logout():
         return make_response("LOGOUT successful")
     return response_unauthorized("session not found")
 
-def response_unauthorized(msg: str = ""):
-    return msg, 401
+@app.route('/account', methods=['DELETE'])
+def delete_account():
+    res = response_unauthorized("account not found")
+    sid = request.cookies.get('sid')
+    uid = session_manager.sid_to_uid(sid)
+    if uid is not None:
+        if db_manager.delete_account(uid):
+            session_manager.remove_session_by_uid(uid)
+            res = make_response("account DELETED successfully")
+        else:
+            res = ("DB Error", 500)
+    save_sessionmanager()
+    return res
 
-def get_google_provider_cfg():
-    return requests.get(GOOGLE_DISCOVERY_URL).json()
+@app.route('/todoitem', methods=['POST'])
+def post_todoitem():
+    ret = response_unauthorized("account not found")
+    sid = request.cookies.get('sid')
+    uid = session_manager.sid_to_uid(sid)
+    if uid is not None:
+        todoitems = request.get_json()
+        res = False
+        if type(todoitems) is list:
+            res = db_manager.insert_listof_todoitems(uid, todoitems)
+        elif type(todoitems) is dict:
+            res = db_manager.insert_one_todoitem(uid, todoitems)
+        ret = "Success" if res else "Fail"
+    save_sessionmanager()
+    return ret
 
+@app.route('/todoitem', methods=['GET'])
+def get_todoitem():
+    res = response_unauthorized("account not found")
+    sid = request.cookies.get('sid')
+    uid = session_manager.sid_to_uid(sid)
+    if uid is not None:
+        list_todoitem = db_manager.get_todoitems(uid)
+        res = json.dumps(list_todoitem, ensure_ascii=False)
+    save_sessionmanager()
+    return res
 
 if __name__ == '__main__':
     main()
