@@ -20,6 +20,8 @@ import pickle
 # Internal imports
 # Configuration
 
+DEBUG = True
+
 GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_DISCOVERY_URL = init_google_oauth()
 
 app = Flask('name')
@@ -43,7 +45,8 @@ def save_sessionmanager():
 def main():
     #ssl settings
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-    ssl_context.load_cert_chain(certfile='ssl/cert.pem', keyfile='ssl/key.pem', password='secret')# OAuth2 client setup
+    if DEBUG: ssl_context.load_cert_chain(certfile='ssl/cert.pem', keyfile='ssl/key.pem', password='secret')# OAuth2 client setup
+    else: ssl_context.load_cert_chain(certfile='/etc/letsencrypt/live/easytodo.p-e.kr/fullchain.pem', keyfile='/etc/letsencrypt/live/easytodo.p-e.kr/privkey.pem', password='secret')
     app.run(host="0.0.0.0", port=443, ssl_context=ssl_context)
 
 def response_login_success_json(session: Session, userinfo_dict: dict) -> str:  # make a json object with token and userinfo

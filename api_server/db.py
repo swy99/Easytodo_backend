@@ -3,6 +3,8 @@ from colored import fg, bg, attr
 from datetime import datetime
 from jsondatetime import *
 
+VERBOSE_DB = False
+
 class DBManager:
     def __init__(self):
         self._query_insert_userinfo = ("INSERT INTO userinfo "
@@ -42,7 +44,7 @@ class DBManager:
             self.cursor.execute(self._query_insert_userinfo, userinfo_values)
             self.cnx.commit()
             self._close()
-            print(f'{fg("white")}[DB] insert_userinfo {fg("white")}')
+            if VERBOSE_DB: print(f'{fg("white")}[DB] insert_userinfo {fg("white")}')
             res = True
         except Exception as e:
             print(f'{fg("red")}[DB] failed: insert_userinfo{e} {fg("white")}')
@@ -54,7 +56,7 @@ class DBManager:
         try:
             self._connect()
             self.cursor.execute(self._query_select_userinfo_by_uid, (uid,))
-            print(f'{fg("white")}[DB] select_userinfo_by_uid {fg("white")}')
+            if VERBOSE_DB: print(f'{fg("white")}[DB] select_userinfo_by_uid {fg("white")}')
             for tup in self.cursor: # uid is unique, so there is only one row or no rows.
                 res = {'sub':tup[0], 'uid':tup[0], 'name':tup[1], 'given_name':tup[2], 'email':tup[3], 'signup_datetime':datetime2JSON(tup[4])}
                 break
@@ -71,7 +73,7 @@ class DBManager:
             self.cursor.execute(self._query_delete_userinfo_by_uid, (uid,))
             self.cnx.commit()
             self._close()
-            print(f'{fg("white")}[DB] delete_userinfo_by_uid {fg("white")}')
+            if VERBOSE_DB: print(f'{fg("white")}[DB] delete_userinfo_by_uid {fg("white")}')
             res = True
         except Exception as e:
             print(f'{fg("red")}[DB] failed: delete_userinfo_by_uid{e} {fg("white")}')
@@ -99,7 +101,7 @@ class DBManager:
                 ))
             self.cnx.commit()
             self._close()
-            print(f'{fg("white")}[DB] insert_todoitem {fg("white")}')
+            if VERBOSE_DB: print(f'{fg("white")}[DB] insert_todoitem {fg("white")}')
             res = True
         except Exception as e:
             print(f'{fg("red")}[DB] failed: insert_todoitem{e} {fg("white")}')
@@ -111,7 +113,7 @@ class DBManager:
         try:
             self._connect()
             self.cursor.execute(self._query_select_todoitem_by_uid, (uid,))
-            print(f'{fg("white")}[DB] select_todoitem_by_uid {fg("white")}')
+            if VERBOSE_DB: print(f'{fg("white")}[DB] select_todoitem_by_uid {fg("white")}')
             res = []
             for tup in self.cursor: # uid is unique, so there is only one row or no rows.
                 res.append({'id':tup[0], 'title':tup[2], 'tags':tup[3], 'deadline':tup[4],
@@ -182,6 +184,8 @@ class DBManager:
             return []
 
 def test():
+    global VERBOSE_DB
+    VERBOSE_DB = True
     sampleuserinfo = {'uid': '13124', 'name': 'Sungwon', 'given_name': 'Yang', 'email': 'yyang3314@kaist.ac.kr'}
     uid = sampleuserinfo['uid']
     db = DBManager()
@@ -191,6 +195,8 @@ def test():
     db.get_userinfo(uid)
 
 def test_todoitem_insert():
+    global VERBOSE_DB
+    VERBOSE_DB = True
     sampleuserinfo = {'uid': '777', 'name': 'Sungwon', 'given_name': 'Yang', 'email': 'yyang3314@kaist.ac.kr'}
     sampletododata = {'uid': '777', 'title': 'testitem!!', 'memo': 'this is insert todoitem test on python'}
     db = DBManager()

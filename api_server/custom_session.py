@@ -3,6 +3,8 @@ import string
 from datetime import datetime, timezone, timedelta
 from jsondatetime import *
 
+VERBOSE_SESSION = False
+
 def randstr(length):
     letters_set = string.ascii_letters
     random_list = random.sample(letters_set, length)
@@ -45,7 +47,7 @@ class SessionManager:
                 del self.sessions[i]
                 deleted_sessions.append(session)
         if len(deleted_sessions) > 0:
-            print('[Timeout] ',end='')
+            if VERBOSE_SESSION: print('[Timeout] ',end='')
             for session in deleted_sessions:
                 print(session, end=', ')
             print('')
@@ -65,7 +67,7 @@ class SessionManager:
     def remove_session_by_sid(self, sid: str) -> bool:
         for session in self.sessions:
             if session.sid == sid:
-                print(f'[LOGOUT] {session}')
+                if VERBOSE_SESSION: print(f'[LOGOUT] {session}')
                 self.sessions.remove(session)
                 return True
         return False
@@ -73,7 +75,7 @@ class SessionManager:
     def remove_session_by_uid(self, uid: str) -> bool:
         for session in self.sessions:
             if session.uid == uid:
-                print(f'[LOGOUT] {session}')
+                if VERBOSE_SESSION: print(f'[LOGOUT] {session}')
                 self.sessions.remove(session)
                 return True
         return False
@@ -84,7 +86,7 @@ class SessionManager:
             newsid = randstr(self.sid_length)
         new_session = Session(newsid, uid, self.lifetime)
         self.sessions.append(new_session)
-        print(f'[NEWSESSION] {new_session}')
+        if VERBOSE_SESSION: print(f'[NEWSESSION] {new_session}')
         return new_session
 
     def verify_sid(self, sid: str) -> bool:
@@ -117,6 +119,8 @@ class SessionManager:
 
 
 def test():
+    global VERBOSE_SESSION
+    VERBOSE_SESSION = True
     m = SessionManager()
     m.login('2222')
     import time
