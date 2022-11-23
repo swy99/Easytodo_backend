@@ -50,7 +50,7 @@ def main():
     app.run(host="0.0.0.0", port=443, ssl_context=ssl_context)
 
 def response_login_success_json(session: Session, userinfo_dict: dict) -> str:  # make a json object with token and userinfo
-    token_dict = {'sid': session.sid, 'expired_at': datetime2JSON(session.timeout)}
+    token_dict = {'sid': session.sid, 'expired_at': datetime2JSON(session.timeout), 'Cookie': 'sid=' + session.sid}
     res_dict = {'token': token_dict, 'userinfo': userinfo_dict}
     del res_dict['userinfo']['sub'], res_dict['userinfo']['uid']
     save_sessionmanager()
@@ -187,6 +187,39 @@ def get_todoitem():
         res = json.dumps(list_todoitem, ensure_ascii=False)
     save_sessionmanager()
     return res
+
+@app.route('/todoitem', methods=['PUT'])
+def put_todoitem():
+    ret = response_unauthorized("account not found")
+    sid = request.cookies.get('sid')
+    uid = session_manager.sid_to_uid(sid)
+    if uid is not None:
+        todoitems = request.get_json()
+        res = False
+        if type(todoitems) is list:
+            res = False  # not Supported! /// db_manager.insert_listof_todoitems(uid, todoitems)
+        elif type(todoitems) is dict:
+            res = db_manager.update_one_todoitem(uid, todoitems)
+        ret = "Success" if res else "Fail"
+    save_sessionmanager()
+    return ret
+
+@app.route('/todoitem', methods=['DELETE'])
+def delete_todoitem():
+    ret = response_unauthorized("account not found")
+    sid = request.cookies.get('sid')
+    uid = session_manager.sid_to_uid(sid)
+    if uid is not None:
+        id = request.args.get('id', type=int)
+        if type(id) is not int:
+            res = False
+        else:
+            res = db_manager.delete_one_todoitem(uid, id)
+        ret = "Success" if res else "Fail"
+    save_sessionmanager()
+    return ret
+
+
 
 if __name__ == '__main__':
     main()
