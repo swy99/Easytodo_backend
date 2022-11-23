@@ -55,11 +55,11 @@ class DBManager:
             self._connect()
             self.cursor.execute(self._query_insert_userinfo, userinfo_values)
             self.cnx.commit()
-            self._close()
             if VERBOSE_DB: print(f'{fg("white")}[DB] insert_userinfo {fg("white")}')
             res = True
         except Exception as e:
             print(f'{fg("red")}[DB] failed: insert_userinfo {e} {fg("white")}')
+        self._close()
 
         return res
 
@@ -84,11 +84,11 @@ class DBManager:
             self._connect()
             self.cursor.execute(self._query_delete_userinfo_by_uid, (uid,))
             self.cnx.commit()
-            self._close()
             if VERBOSE_DB: print(f'{fg("white")}[DB] delete_userinfo_by_uid {fg("white")}')
             res = True
         except Exception as e:
             print(f'{fg("red")}[DB] failed: delete_userinfo_by_uid {e} {fg("white")}')
+        self._close()
 
         return res
 
@@ -107,10 +107,18 @@ class DBManager:
             res = True
         except Exception as e:
             print(f'{fg("red")}[DB] failed: insert_todoitem {e} {fg("white")}')
+        self._close()
 
         return res
 
     def _select_todoitem_by_uid(self, uid: str) -> list or None:
+        def safe_json(s: str):
+            res = s
+            try:
+                res = json.loads(s)
+            except:
+                res = s
+            return res
         res = None
         try:
             self._connect()
@@ -118,10 +126,11 @@ class DBManager:
             if VERBOSE_DB: print(f'{fg("white")}[DB] select_todoitem_by_uid {fg("white")}')
             res = []
             for tup in self.cursor:
-                res.append({'id':tup[0], 'title':tup[2], 'tags':json.loads(tup[3]), 'deadline':tup[4],
-                            'is_repeated':bool(tup[5]), 'repetition_id':tup[6], 'memo':tup[7], 'status':tup[8]})
+                res.append({'id':tup[0], 'title':tup[2],
+                            'tags':safe_json(tup[3]), 'deadline':tup[4], 'is_repeated':bool(tup[5]),
+                            'repetition_id':tup[6], 'memo':tup[7], 'status':tup[8]})
         except Exception as e:
-            print(f'{fg("red")}[DB] failed: select_userinfo_by_uid {e}{fg("white")}')
+            print(f'{fg("red")}[DB] failed: select_todoitem_by_uid {e}{fg("white")}')
         self._close()
 
         return res
@@ -136,11 +145,11 @@ class DBManager:
                 safe_get(todoitem, 'status'), safe_get(todoitem, 'uid'), safe_get(todoitem, 'id')
             ))
             self.cnx.commit()
-            self._close()
             if VERBOSE_DB: print(f'{fg("white")}[DB] update_todoitem {fg("white")}')
             res = True
         except Exception as e:
             print(f'{fg("red")}[DB] failed: insert_todoitem {e} {fg("white")}')
+        self._close()
 
         return res
 
@@ -150,11 +159,11 @@ class DBManager:
             self._connect()
             self.cursor.execute(self._query_delete_todoitem_by_uid_and_id, (uid, id))
             self.cnx.commit()
-            self._close()
             if VERBOSE_DB: print(f'{fg("white")}[DB] delete_todoitem_by_uid_and_id {fg("white")}')
             res = True
         except Exception as e:
             print(f'{fg("red")}[DB] failed: delete_todoitem_by_uid_and_id {e} {fg("white")}')
+        self._close()
 
         return res
 
