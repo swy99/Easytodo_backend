@@ -1,24 +1,13 @@
 from flask import Flask, request, jsonify, redirect, url_for, make_response
-from flask_login import (
-    LoginManager,
-    current_user,
-    login_required,
-    login_user,
-    logout_user,
-)
 import json
 import ssl
-import os
 from oauthlib.oauth2 import WebApplicationClient
 import requests
 from api_server_initialization import *
-from custom_session import *
-from db import DBManager
-import pickle
+from session_manager import *
+from db_mananger import DBManager
 
-# Third party libraries
-# Internal imports
-# Configuration
+
 
 DEBUG = True
 
@@ -28,19 +17,8 @@ app = Flask('name')
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
 oauth_client_google = WebApplicationClient(GOOGLE_CLIENT_ID)
 
-save_sessions = True
-
-if os.path.isfile("session_manager.backup"):
-    with open('session_manager.backup', 'rb') as file:
-        session_manager = pickle.load(file)
-else:
-    session_manager = SessionManager()
+session_manager = SessionManager()
 db_manager = DBManager()
-
-def save_sessionmanager():
-    if save_sessions:
-        with open('session_manager.backup', 'wb') as file:
-            pickle.dump(session_manager, file)
 
 def main():
     #ssl settings
@@ -53,7 +31,6 @@ def response_login_success_json(session: Session, userinfo_dict: dict) -> str:  
     token_dict = {'sid': session.sid, 'expired_at': datetime2JSON(session.timeout), 'Cookie': 'sid=' + session.sid}
     res_dict = {'token': token_dict, 'userinfo': userinfo_dict}
     del res_dict['userinfo']['sub'], res_dict['userinfo']['uid']
-    save_sessionmanager()
     return json.dumps(res_dict, ensure_ascii=False)
 
 def response_unauthorized(msg: str = ""):
@@ -89,7 +66,6 @@ def login():
         redirect_uri=request.base_url + "/callback",
         scope=["openid", "email", "profile"],
     )
-    save_sessionmanager()
     return request_uri
 
 @app.route("/login/callback")
@@ -137,7 +113,6 @@ def login_callback():
     else:
         resp = "error"
 
-    save_sessionmanager()
     return resp
 
 @app.route('/logout', methods=['POST'])
@@ -158,7 +133,6 @@ def delete_account():
             res = make_response("account DELETED successfully")
         else:
             res = ("DB Error", 500)
-    save_sessionmanager()
     return res
 
 @app.route('/todoitem', methods=['POST'])
@@ -174,7 +148,6 @@ def post_todoitem():
         elif type(todoitems) is dict:
             res = db_manager.insert_one_todoitem(uid, todoitems)
         ret = "Success" if res else "Fail"
-    save_sessionmanager()
     return ret
 
 @app.route('/todoitem', methods=['GET'])
@@ -185,7 +158,6 @@ def get_todoitem():
     if uid is not None:
         list_todoitem = db_manager.get_todoitems(uid)
         res = json.dumps(list_todoitem, ensure_ascii=False)
-    save_sessionmanager()
     return res
 
 @app.route('/todoitem', methods=['PUT'])
@@ -201,7 +173,6 @@ def put_todoitem():
         elif type(todoitems) is dict:
             res = db_manager.update_one_todoitem(uid, todoitems)
         ret = "Success" if res else "Fail"
-    save_sessionmanager()
     return ret
 
 @app.route('/todoitem', methods=['DELETE'])
@@ -216,7 +187,6 @@ def delete_todoitem():
         else:
             res = db_manager.delete_one_todoitem(uid, id)
         ret = "Success" if res else "Fail"
-    save_sessionmanager()
     return ret
 
 @app.route('/recommendation', methods=['GET'])
@@ -226,7 +196,6 @@ def get_recommendation():
     uid = session_manager.sid_to_uid(sid)
     if uid is not None:
         ret = json.dumps(["Do Homework", "Exercise", "Take pills"])
-    save_sessionmanager()
     return ret
 
 if __name__ == '__main__':

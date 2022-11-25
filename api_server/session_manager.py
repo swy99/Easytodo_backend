@@ -2,6 +2,8 @@ import random
 import string
 from datetime import datetime, timezone, timedelta
 from jsondatetime import *
+import pickle
+import os
 
 VERBOSE_SESSION = False
 
@@ -35,10 +37,28 @@ class Session:
 
 
 class SessionManager:
-    def __init__(self, lifetime: timedelta = timedelta(hours=1), sid_length: int = 40):
+    def __init__(self, lifetime:timedelta=timedelta(hours=1), sid_length:int=40, load:bool=True, save:bool=True):
         self.sessions = []
         self.lifetime = lifetime
         self.sid_length = sid_length
+        self.load_enabled = load
+        self.save_enabled = save
+        self._load()
+
+    def _load(self):
+        if self.load_enabled:
+            try:
+                if os.path.isfile("session_manager.backup"):
+                    with open('session_manager.backup', 'rb') as file:
+                        session_manager = pickle.load(file)
+                    self = session_manager
+            except:
+                pass
+
+    def _save(self):
+        if self.save_enabled:
+            with open('session_manager.backup', 'wb') as file:
+                pickle.dump(self, file)
 
     def _clearExpiredSessions(self) -> None:
         deleted_sessions = []
@@ -51,57 +71,87 @@ class SessionManager:
             for session in deleted_sessions:
                 print(session, end=', ')
             print('')
+        self._save()
 
     def _search_session_by_uid(self, uid: str) -> Session:
+        res = None
         for session in self.sessions:
             if session.uid == uid:
-                return session
-        return None
+                res = session
+                break
+        self._save()
+
+        return res
 
     def _search_session_by_sid(self, sid: str) -> Session:
+        res = None
         for session in self.sessions:
             if session.sid == sid:
-                return session
-        return None
+                res = session
+                break
+        self._save()
+
+        return res
 
     def remove_session_by_sid(self, sid: str) -> bool:
+        res = False
         for session in self.sessions:
             if session.sid == sid:
                 if VERBOSE_SESSION: print(f'[LOGOUT] {session}')
                 self.sessions.remove(session)
-                return True
-        return False
+                res = True
+                break
+        self._save()
+
+        return res
 
     def remove_session_by_uid(self, uid: str) -> bool:
+        res = False
         for session in self.sessions:
             if session.uid == uid:
                 if VERBOSE_SESSION: print(f'[LOGOUT] {session}')
                 self.sessions.remove(session)
-                return True
-        return False
+                res = True
+                break
+        self._save()
+
+        return res
 
     def _createSession(self, uid: str) -> Session:
         newsid = randstr(self.sid_length)
         while self._search_session_by_sid(newsid) is not None:
             newsid = randstr(self.sid_length)
+
         new_session = Session(newsid, uid, self.lifetime)
         self.sessions.append(new_session)
-        if VERBOSE_SESSION: print(f'[NEWSESSION] {new_session}')
+
+        if VERBOSE_SESSION:
+            print(f'[NEWSESSION] {new_session}')
+        self._save()
+
         return new_session
 
     def verify_sid(self, sid: str) -> bool:
+        res = False
         self._clearExpiredSessions()
         for session in self.sessions:
             if session.sid == sid:
-                return True
-        return False
+                res = True
+                break
+        self._save()
+
+        return res
 
     def sid_to_uid(self, sid: str) -> str or None:
+        res = None
         self._clearExpiredSessions()
         for session in self.sessions:
             if session.sid == sid:
-                return session.uid
-        return None
+                res = session.uid
+                break
+        self._save()
+
+        return res
 
     def login(self, uid: str) -> Session:
         self._clearExpiredSessions()
@@ -111,11 +161,16 @@ class SessionManager:
         else:
             session = self._createSession(uid)
         # check the db if a new user
+        self._save()
+
         return session
 
     def logout(self, sid: str) -> bool:
         self._clearExpiredSessions()
-        return self.remove_session_by_sid(sid)
+        res = self.remove_session_by_sid(sid)
+        self._save()
+
+        return res
 
 
 def test():
