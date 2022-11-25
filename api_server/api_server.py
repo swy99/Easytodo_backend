@@ -219,7 +219,15 @@ def delete_todoitem():
     save_sessionmanager()
     return ret
 
-
+@app.route('/recommendation', methods=['GET'])
+def get_recommendation():
+    ret = response_unauthorized("account not found")
+    sid = request.cookies.get('sid')
+    uid = session_manager.sid_to_uid(sid)
+    if uid is not None:
+        ret = json.dumps(["Do Homework", "Exercise", "Take pills"])
+    save_sessionmanager()
+    return ret
 
 if __name__ == '__main__':
     main()

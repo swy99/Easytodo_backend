@@ -2,7 +2,7 @@ USE userdata;
 
 DROP TABLE IF EXISTS todoitem;
 DROP TABLE IF EXISTS userinfo;
-DROP TABLE IF EXISTS session;
+DROP TABLE IF EXISTS sessioninfo;
 
 CREATE TABLE userinfo (
 	uid VARCHAR(25) PRIMARY KEY,
@@ -12,7 +12,7 @@ CREATE TABLE userinfo (
     signup_datetime DATETIME
 );
 
-/*CREATE TABLE session (
+/*CREATE TABLE sessioninfo (
 	sid CHAR(40) PRIMARY KEY,
     uid VARCHAR(25) UNIQUE NOT NULL,
     timeout DATETIME NOT NULL,

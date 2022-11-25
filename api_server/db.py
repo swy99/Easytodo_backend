@@ -11,7 +11,7 @@ class DBManager:
         self._query_insert_userinfo = ("INSERT INTO userinfo "
                                       "(uid, name, given_name, email, signup_datetime) "
                                       "VALUES (%s, %s, %s, %s, %s)")
-        self._query_select_userinfo_by_uid = ("SELECT * FROM userinfo "  # 마지막에 띄어쓰기 안해서 디버깅 40분동안 함
+        self._query_select_userinfo_by_uid = ("SELECT * FROM userinfo "
                                              "WHERE uid = %s")
         self._query_delete_userinfo_by_uid = ("DELETE FROM userinfo "
                                               "WHERE uid = %s")
@@ -112,14 +112,6 @@ class DBManager:
         return res
 
     def _select_todoitem_by_uid(self, uid: str) -> list or None:
-        def safe_json(s: str):
-            res = s
-            try:
-                res = json.loads(s)
-            except:
-                res = s
-            return res
-        res = None
         try:
             self._connect()
             self.cursor.execute(self._query_select_todoitem_by_uid, (uid,))
@@ -234,6 +226,14 @@ class DBManager:
         return self._delete_todoitem_by_uid_and_id(uid, id)
 
 
+def safe_json(s: str):
+    res = s
+    try:
+        res = json.loads(s)
+    except:
+        res = s
+    return res
+res = None
 
 def safe_get(dict: dict, key: str):
     if key in dict:
