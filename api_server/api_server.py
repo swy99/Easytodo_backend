@@ -55,8 +55,9 @@ def post_echo_call():
     param = request.get_json()
     return jsonify(param)
 
-'''@app.route('/login', methods=['POST', 'GET'])
-def login():
+@app.route('/login2', methods=['POST', 'GET'])
+def login2():
+    if not DEBUG: return
     # Find out what URL to hit for Google login
     authorization_endpoint = get_google_provider_cfg()["authorization_endpoint"]
 
@@ -71,6 +72,7 @@ def login():
 
 @app.route("/login/callback")
 def login_callback():
+    if not DEBUG: return
     # Get authorization code Google sent back to you
     code = request.args.get("code")
 
@@ -117,7 +119,7 @@ def login_callback():
     else:
         resp = "error"
 
-    return resp'''
+    return resp
 
 @app.route("/login", methods=['POST'])
 def login():
