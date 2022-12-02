@@ -25,7 +25,8 @@ def main():
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
     if DEBUG: ssl_context.load_cert_chain(certfile='ssl/cert.pem', keyfile='ssl/key.pem', password='secret')# OAuth2 client setup
     else: ssl_context.load_cert_chain(certfile='/etc/letsencrypt/live/easytodo.p-e.kr/fullchain.pem', keyfile='/etc/letsencrypt/live/easytodo.p-e.kr/privkey.pem', password='secret')
-    app.run(host="0.0.0.0", port=443, ssl_context=ssl_context)
+    if DEBUG: app.run(host="localhost", port=443, ssl_context=ssl_context)
+    else: app.run(host="0.0.0.0", port=443, ssl_context=ssl_context)
 
 def response_login_success_json(session: Session, userinfo_dict: dict) -> str:  # make a json object with token and userinfo
     token_dict = {'sid': session.sid, 'expired_at': datetime2JSON(session.timeout), 'Cookie': 'sid=' + session.sid}
@@ -54,7 +55,7 @@ def post_echo_call():
     param = request.get_json()
     return jsonify(param)
 
-@app.route('/login', methods=['POST', 'GET'])
+'''@app.route('/login', methods=['POST', 'GET'])
 def login():
     # Find out what URL to hit for Google login
     authorization_endpoint = get_google_provider_cfg()["authorization_endpoint"]
@@ -91,6 +92,9 @@ def login_callback():
         auth=(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET),
     )
 
+    print(token_response.json())
+    return token_response.json()
+
     # Parse the tokens!
     oauth_client_google.parse_request_body_response(json.dumps(token_response.json(), ensure_ascii=False))
 
@@ -101,6 +105,42 @@ def login_callback():
     uri, headers, body = oauth_client_google.add_token(userinfo_endpoint)
     userinfo_response = requests.get(uri, headers=headers, data=body)
     userinfo_dict = userinfo_response.json()
+    uid = userinfo_dict['sub']
+    userinfo_dict['uid'] = uid
+
+    if db_manager.is_member(uid) or db_manager.sign_up(userinfo_dict):
+        userinfo_dict = db_manager.get_userinfo(uid)
+        session = session_manager.login(userinfo_dict['uid'])
+        resp_str = response_login_success_json(session, userinfo_dict)
+        resp = make_response(resp_str)
+        resp.set_cookie("sid", session.sid)
+    else:
+        resp = "error"
+
+    return resp'''
+
+@app.route("/login", methods=['POST'])
+def login():
+    tokens = request.get_json()
+
+    # Parse the tokens!
+    try:
+        oauth_client_google.parse_request_body_response(json.dumps(tokens, ensure_ascii=False))
+    except Exception as e:
+        print(f'login {e}')
+        return
+
+    # Now that we have tokens (yay) let's find and hit URL
+    # from Google that gives you user's profile information,
+    # including their Google Profile Image and Email
+    userinfo_endpoint = get_google_provider_cfg()["userinfo_endpoint"]
+    uri, headers, body = oauth_client_google.add_token(userinfo_endpoint)
+    userinfo_response = requests.get(uri, headers=headers, data=body)
+    try:
+        userinfo_dict = userinfo_response.json()
+    except Exception as e:
+        print(f'login {e}')
+        return
     uid = userinfo_dict['sub']
     userinfo_dict['uid'] = uid
 
