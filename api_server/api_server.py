@@ -70,7 +70,7 @@ def login2():
     )
     return request_uri
 
-@app.route("/login/callback")
+@app.route("/login2/callback")
 def login_callback():
     if not DEBUG: return
     # Get authorization code Google sent back to you
