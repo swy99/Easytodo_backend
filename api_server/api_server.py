@@ -186,9 +186,13 @@ def post_todoitem():
         res = False
         if type(todoitems) is list:
             res = db_manager.insert_listof_todoitems(uid, todoitems)
+            ret = []
+            for it in db_manager.get_todoitems(uid)[-len(todoitems):]:
+                ret.append(it["id"])
         elif type(todoitems) is dict:
             res = db_manager.insert_one_todoitem(uid, todoitems)
-        ret = "Success" if res else "Fail"
+            ret = db_manager.get_todoitems(uid)[-1]["id"]
+        ret = ret if res else "Fail"
     return ret
 
 @app.route('/todoitem', methods=['GET'])
