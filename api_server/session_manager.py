@@ -54,6 +54,7 @@ class SessionManager:
                     self = session_manager
             except:
                 pass
+        self._clearExpiredSessions()
 
     def _save(self):
         if self.save_enabled:
@@ -160,7 +161,6 @@ class SessionManager:
             session.resetTimeout()
         else:
             session = self._createSession(uid)
-        # check the db if a new user
         self._save()
 
         return session
