@@ -189,9 +189,10 @@ def post_todoitem():
             ret = []
             for it in db_manager.get_todoitems(uid)[-len(todoitems):]:
                 ret.append(it["id"])
+            ret = json.dumps(ret)
         elif type(todoitems) is dict:
             res = db_manager.insert_one_todoitem(uid, todoitems)
-            ret = db_manager.get_todoitems(uid)[-1]["id"]
+            ret = str(db_manager.get_todoitems(uid)[-1]["id"])
         ret = ret if res else "Fail"
     return ret
 
