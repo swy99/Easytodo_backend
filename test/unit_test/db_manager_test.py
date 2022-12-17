@@ -13,7 +13,7 @@ item2 = {"title": "testitem2"}
 itemlist = [item1, item2]
 
 
-class DBManagerTest:
+class DBManagerTester:
     def sign_up_test(self):
         dbm = DBManager()
         dbm.delete_account(uid)
@@ -56,11 +56,22 @@ class DBManagerTest:
         assert dbm.get_todoitems(uid)[0]["title"] == "update test"
 
     def all(self):
-        self.sign_up_test()
-        self.get_userinfo_test()
-        self.delete_account_test()
-        self.todoitem_test()
+        test_list = [['TC1.1. signup', self.sign_up_test],
+                     ['TC1.2. get_userinfo', self.get_userinfo_test],
+                     ['TC1.3. delete_account', self.delete_account_test],
+                     ['TC1.4. todoitem', self.get_userinfo_test]]
+        score = 0
+        print('[DB_manager unit testing]')
+        for i,t in enumerate(test_list):
+            print(f'  ({t[0]}) ', end='')
+            try:
+                t[1]()
+                print('success')
+                score+=1
+            except Exception as e:
+                print(f'fail {e}')
+        print(f'{score}/{len(test_list)} test cases passed\n')
 
 if __name__ == "__main__":
-    test = DBManagerTest()
+    test = DBManagerTester()
     test.all()

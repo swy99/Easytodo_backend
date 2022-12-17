@@ -1,7 +1,7 @@
 import mysql.connector
 from colored import fg, bg, attr
 from datetime import datetime
-from jsondatetime import *
+from api_server.jsondatetime import *
 import json
 
 VERBOSE_DB = False
@@ -58,7 +58,7 @@ class DBManager:
             if VERBOSE_DB: print(f'{fg("white")}[DB] insert_userinfo {fg("white")}')
             res = True
         except Exception as e:
-            print(f'{fg("red")}[DB] failed: insert_userinfo {e} {fg("white")}')
+            if VERBOSE_DB: print(f'{fg("red")}[DB] failed: insert_userinfo {e} {fg("white")}')
         self._close()
 
         return res
@@ -73,7 +73,7 @@ class DBManager:
                 res = {'sub':tup[0], 'uid':tup[0], 'name':tup[1], 'given_name':tup[2], 'email':tup[3], 'signup_datetime':datetime2JSON(tup[4])}
                 break
         except Exception as e:
-            print(f'{fg("red")}[DB] failed: select_userinfo_by_uid {e}{fg("white")}')
+            if VERBOSE_DB: print(f'{fg("red")}[DB] failed: select_userinfo_by_uid {e}{fg("white")}')
         self._close()
 
         return res
@@ -87,7 +87,7 @@ class DBManager:
             if VERBOSE_DB: print(f'{fg("white")}[DB] delete_userinfo_by_uid {fg("white")}')
             res = True
         except Exception as e:
-            print(f'{fg("red")}[DB] failed: delete_userinfo_by_uid {e} {fg("white")}')
+            if VERBOSE_DB: print(f'{fg("red")}[DB] failed: delete_userinfo_by_uid {e} {fg("white")}')
         self._close()
 
         return res
@@ -106,7 +106,7 @@ class DBManager:
             if VERBOSE_DB: print(f'{fg("white")}[DB] insert_todoitem {fg("white")}')
             res = True
         except Exception as e:
-            print(f'{fg("red")}[DB] failed: insert_todoitem {e} {fg("white")}')
+            if VERBOSE_DB: print(f'{fg("red")}[DB] failed: insert_todoitem {e} {fg("white")}')
         self._close()
 
         return res
@@ -122,7 +122,7 @@ class DBManager:
                             'tags':safe_json(tup[3]), 'deadline':tup[4], 'is_repeated':bool(tup[5]),
                             'repetition_id':tup[6], 'memo':tup[7], 'status':tup[8]})
         except Exception as e:
-            print(f'{fg("red")}[DB] failed: select_todoitem_by_uid {e}{fg("white")}')
+            if VERBOSE_DB: print(f'{fg("red")}[DB] failed: select_todoitem_by_uid {e}{fg("white")}')
         self._close()
 
         return res
@@ -140,7 +140,7 @@ class DBManager:
             if VERBOSE_DB: print(f'{fg("white")}[DB] update_todoitem {fg("white")}')
             res = True
         except Exception as e:
-            print(f'{fg("red")}[DB] failed: insert_todoitem {e} {fg("white")}')
+            if VERBOSE_DB: print(f'{fg("red")}[DB] failed: insert_todoitem {e} {fg("white")}')
         self._close()
 
         return res
@@ -154,7 +154,7 @@ class DBManager:
             if VERBOSE_DB: print(f'{fg("white")}[DB] delete_todoitem_by_uid_and_id {fg("white")}')
             res = True
         except Exception as e:
-            print(f'{fg("red")}[DB] failed: delete_todoitem_by_uid_and_id {e} {fg("white")}')
+            if VERBOSE_DB: print(f'{fg("red")}[DB] failed: delete_todoitem_by_uid_and_id {e} {fg("white")}')
         self._close()
 
         return res
@@ -167,12 +167,12 @@ class DBManager:
         if not self.is_member(userinfo_dict['uid']):
             userinfo_dict['signup_datetime'] = datetime2JSON(datetimenow())
             if self._insert_userinfo(userinfo_dict):
-                print(f'{fg("green")}[DB] sign_up: {userinfo_dict} {fg("white")}')
+                if VERBOSE_DB: print(f'{fg("green")}[DB] sign_up: {userinfo_dict} {fg("white")}')
                 res = True
             else:
-                print(f'{fg("red")}[DB] failed: sign_up: db error {fg("white")}')
+                if VERBOSE_DB: print(f'{fg("red")}[DB] failed: sign_up: db error {fg("white")}')
         else:
-            print(f'{fg("red")}[DB] failed: sign_up: already a member {userinfo_dict} {fg("white")}')
+            if VERBOSE_DB: print(f'{fg("red")}[DB] failed: sign_up: already a member {userinfo_dict} {fg("white")}')
 
         return res
 
@@ -180,12 +180,12 @@ class DBManager:
         res = False
         if self.is_member(uid):
             if self._delete_userinfo_by_uid(uid):  # all todoitems are automatically deleted due to CASCADE
-                print(f'{fg("green")}[DB] delete_account: {uid} {fg("white")}')
+                if VERBOSE_DB: print(f'{fg("green")}[DB] delete_account: {uid} {fg("white")}')
                 res = True
             else:
-                print(f'{fg("red")}[DB] failed: delete_account: db error {fg("white")}')
+                if VERBOSE_DB: print(f'{fg("red")}[DB] failed: delete_account: db error {fg("white")}')
         else:
-            print(f'{fg("red")}[DB] failed: delete_account: not a member {uid} {fg("white")}')
+            if VERBOSE_DB: print(f'{fg("red")}[DB] failed: delete_account: not a member {uid} {fg("white")}')
 
         return res
 
@@ -193,10 +193,10 @@ class DBManager:
         res = None
         userinfo_dict = self._select_userinfo_by_uid(uid)
         if userinfo_dict is not None:
-            print(f'{fg("green")}[DB] get_userinfo: {userinfo_dict} {fg("white")}')
+            if VERBOSE_DB: print(f'{fg("green")}[DB] get_userinfo: {userinfo_dict} {fg("white")}')
             res = userinfo_dict
         else:
-            print(f'{fg("red")}[DB] failed: get_userinfo: not a member {uid} unless select failed {fg("white")}')
+            if VERBOSE_DB: print(f'{fg("red")}[DB] failed: get_userinfo: not a member {uid} unless select failed {fg("white")}')
 
         return res
 
@@ -246,7 +246,6 @@ def safe_get(dict: dict, key: str):
             return res
     else:
         return None
-
 
 
 def test():
